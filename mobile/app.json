@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Server Hub",
-    "slug": "serverhub-mobile",
+    "slug": "serverhub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -54,6 +54,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "457989f0-2833-4075-9560-4e6ba6353de1"
+      }
+    },
+    "owner": "pugal.sriganesh"
   }
 }
