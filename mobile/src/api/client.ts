@@ -1,13 +1,20 @@
 import axios from "axios";
-import * as SecureStore from "expo-secure-store";
+import { storage } from "../utils/storage";
 
-const envUrl = (process.env.EXPO_PUBLIC_API_URL as string | undefined)?.trim();
+function resolveDefaultApiBase(): string {
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (host) {
+      return `http://${host}:4000`;
+    }
+  }
+  const envUrl = (process.env.EXPO_PUBLIC_API_URL as string | undefined)?.trim();
+  return envUrl && envUrl.length > 0 ? envUrl : "http://192.168.0.111:4000";
+}
 
-// Build-time default. Prefer the env value, but never crash the app at
-// import time if it is missing — the user can set the server address on the
-// login screen (stored in SecureStore, see serverUrl.ts).
-export const DEFAULT_API_BASE =
-  envUrl && envUrl.length > 0 ? envUrl : "http://192.168.0.111:4000";
+// Production API Base URL configured via environment file (.env).
+// When previewing on web browser, dynamically routes to the current hostname port 4000.
+export const DEFAULT_API_BASE = resolveDefaultApiBase();
 
 export const API_BASE = DEFAULT_API_BASE;
 
@@ -31,7 +38,7 @@ export const client = axios.create({ // eslint-disable-line import/no-named-as-d
 
 // Inject stored JWT on every request
 client.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = await storage.getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -47,7 +54,7 @@ async function refreshSession(): Promise<boolean> {
     refreshPromise = (async () => {
       try {
         const [refreshToken, baseURL] = await Promise.all([
-          SecureStore.getItemAsync(REFRESH_KEY),
+          storage.getItem(REFRESH_KEY),
           Promise.resolve(client.defaults.baseURL ?? API_BASE),
         ]);
         if (!refreshToken) return false;
@@ -59,8 +66,8 @@ async function refreshSession(): Promise<boolean> {
         const access: string | undefined = res.data?.token;
         const rotated: string | undefined = res.data?.refreshToken;
         if (!access) return false;
-        await SecureStore.setItemAsync(TOKEN_KEY, access);
-        if (rotated) await SecureStore.setItemAsync(REFRESH_KEY, rotated);
+        await storage.setItem(TOKEN_KEY, access);
+        if (rotated) await storage.setItem(REFRESH_KEY, rotated);
         return true;
       } catch {
         return false;
@@ -76,8 +83,7 @@ function isAuthPath(url: string | undefined): boolean {
   return !!url && url.includes("/server-hub/api/auth/");
 }
 
-// Normalize errors — and make "can't reach server" actionable by naming
-// the base URL the app is actually pointing at.
+// Normalize errors into concise, user-friendly messages
 client.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -93,7 +99,7 @@ client.interceptors.response.use(
     ) {
       original._retried = true;
       if (await refreshSession()) {
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        const token = await storage.getItem(TOKEN_KEY);
         if (token) {
           original.headers = original.headers ?? {};
           (original.headers as Record<string, string>).Authorization = `Bearer ${token}`;
@@ -106,8 +112,7 @@ client.interceptors.response.use(
       error.message ??
       `Request failed (${status})`;
     if (status === 0) {
-      const base = (client.defaults.baseURL as string | undefined) ?? API_BASE;
-      msg = `Can't reach the server at ${base}. Check the server URL, that the backend is running, and that phone + PC share the same Wi-Fi.`;
+      msg = "Unable to connect to Server Hub. Please check your network connection or verify that the server is running.";
     }
     return Promise.reject(new ApiError(status, msg));
   },

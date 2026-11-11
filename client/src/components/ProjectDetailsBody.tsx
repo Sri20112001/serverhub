@@ -8,6 +8,7 @@ import { Page } from "./ui/Page";
 import { PageHeader } from "./ui/PageHeader";
 import { StatusPill } from "./ui/StatusPill";
 import { TerminalModal } from "./TerminalModal";
+import { ContainerFileExplorerModal } from "./ContainerFileExplorerModal";
 import { EditShipModal } from "./EditShipModal";
 // DEPLOY: import { DeployProgress } from "./DeployProgress";
 import { useProjectDetails } from "../hooks/useProjectDetails";
@@ -106,6 +107,14 @@ export function ProjectDetailsBody({
           projectName={project.name}
           services={d.services}
           onClose={() => d.setShowTerminal(false)}
+        />
+      )}
+
+      {d.showFiles && (
+        <ContainerFileExplorerModal
+          projectName={project.name}
+          services={d.services}
+          onClose={() => d.setShowFiles(false)}
         />
       )}
 

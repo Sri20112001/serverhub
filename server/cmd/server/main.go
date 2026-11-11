@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -26,6 +27,7 @@ import (
 	"serverhub/internal/healthcheck"
 	"serverhub/internal/middleware"
 	"serverhub/internal/monitoring"
+	"serverhub/internal/serverinfo"
 	"serverhub/internal/telemetry"
 )
 
@@ -80,6 +82,7 @@ func main() {
 	telemetry.StartLoop(db, broker, telemetry.Thresholds{
 		CPU: cfg.AlertCPU, RAM: cfg.AlertRAM, Disk: cfg.AlertDisk,
 	})
+	serverinfo.StartCPUSampler()
 	alerting.StartLoop(db, broker, alerting.Thresholds{
 		CPU: cfg.AlertCPU, RAM: cfg.AlertRAM, Disk: cfg.AlertDisk,
 	})
@@ -99,14 +102,31 @@ func main() {
 	r := gin.Default()
 	// FRONTEND_URL may hold a comma-separated list of allowed origins
 	// (e.g. "http://localhost:6540,http://localhost:5173").
-	origins := []string{"http://localhost:5173", "http://localhost:3000"}
+	origins := []string{
+		"http://localhost:5173",
+		"http://localhost:3000",
+		"http://localhost:8081",
+		"http://127.0.0.1:8081",
+		"http://127.0.0.1:5173",
+		"http://localhost:19006",
+	}
 	for _, o := range strings.Split(cfg.FrontendURL, ",") {
 		if o = strings.TrimSpace(o); o != "" && !slices.Contains(origins, o) {
 			origins = append(origins, o)
 		}
 	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     origins,
+		AllowOriginFunc: func(origin string) bool {
+			if slices.Contains(origins, origin) {
+				return true
+			}
+			u, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+			h := u.Hostname()
+			return h == "localhost" || h == "127.0.0.1" || strings.HasPrefix(h, "192.168.") || strings.HasPrefix(h, "10.") || strings.HasPrefix(h, "172.")
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
 		AllowCredentials: true,
@@ -163,6 +183,8 @@ func main() {
 		ctrH := &handlers.ContainerHandler{DB: db, Docker: dockerClient, Broker: broker}
 		viewer.GET("/containers", ctrH.List)
 		viewer.GET("/containers/:id", ctrH.Inspect)
+		viewer.GET("/containers/:id/files", ctrH.ListFiles)
+		viewer.GET("/containers/:id/files/read", ctrH.ReadFile)
 		viewer.GET("/containers/:id/logs", ctrH.Logs)
 		viewer.GET("/containers/:id/stats", ctrH.Stats)
 		operator.POST("/containers/:id/start", ctrH.Start)
@@ -185,6 +207,8 @@ func main() {
 		viewer.GET("/server/storage", sysH.Storage)
 		viewer.GET("/dashboard", sysH.Dashboard)
 		viewer.GET("/audit", sysH.Audit)
+		viewer.GET("/processes/:pid", sysH.ProcessDetail)
+		operator.POST("/processes/:pid/kill", sysH.KillProcess)
 
 		depH := &handlers.DeploymentHandler{DB: db, Broker: broker}
 		viewer.GET("/deployments", depH.ListAll)
@@ -197,6 +221,7 @@ func main() {
 		telH := &handlers.TelemetryHandler{DB: db}
 		viewer.GET("/telemetry", telH.History)
 		viewer.GET("/telemetry/latest", telH.Latest)
+		viewer.GET("/telemetry/live", telH.Live)
 
 		lifeH := &handlers.ProjectLifecycle{DB: db, Broker: broker}
 		operator.POST("/projects/:id/start", lifeH.Start)

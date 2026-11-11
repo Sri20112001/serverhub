@@ -20,6 +20,7 @@ export function useProjectDetails(project: Project, onChanged: () => void) {
   const [pendingRestore, setPendingRestore] = useState<Backup | null>(null);
   const [logService, setLogService] = useState<string | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
   const [progress, setProgress] = useState<{ id: string; title: string } | null>(null);
   const [backups, setBackups] = useState<Backup[]>([]);
   const [busy, setBusy] = useState(false);
@@ -198,6 +199,7 @@ export function useProjectDetails(project: Project, onChanged: () => void) {
     pendingRestore, setPendingRestore,
     logService, setLogService,
     showTerminal, setShowTerminal,
+    showFiles, setShowFiles,
     progress, setProgress,
     backups,
     busy,

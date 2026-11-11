@@ -12,15 +12,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, X } from "lucide-react-native";
+import { ArrowRight } from "lucide-react-native";
 import { useAuthStore } from "../../../src/stores/authStore";
 import { useBiometricStore } from "../../../src/stores/biometricStore";
 import { authApi } from "../../../src/api/auth";
-import {
-  currentBaseUrl,
-  probeBaseUrl,
-  saveBaseUrl,
-} from "../../../src/api/serverUrl";
 import { colors } from "../../../src/theme/colors";
 
 function SectionHeader({ title }: { title: string }) {
@@ -59,27 +54,6 @@ export default function SettingsScreen() {
   const [newPw, setNewPw] = useState("");
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
-  const [serverUrl, setServerUrl] = useState(() => currentBaseUrl());
-  const [editingServer, setEditingServer] = useState(false);
-  const [serverBusy, setServerBusy] = useState(false);
-  const [serverMsg, setServerMsg] = useState<string | null>(null);
-
-  const handleSaveServer = async () => {
-    if (!serverUrl.trim()) return;
-    setServerBusy(true);
-    setServerMsg(null);
-    try {
-      await probeBaseUrl(serverUrl);
-      const clean = await saveBaseUrl(serverUrl);
-      setServerUrl(clean);
-      setEditingServer(false);
-      setServerMsg(`Connected to ${clean}`);
-    } catch (e) {
-      setServerMsg(e instanceof Error ? e.message : "Could not reach that server.");
-    } finally {
-      setServerBusy(false);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
@@ -88,7 +62,6 @@ export default function SettingsScreen() {
         text: "Sign out",
         style: "destructive",
         onPress: async () => {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await logout();
           router.replace("/(auth)/login");
         },
@@ -99,17 +72,17 @@ export default function SettingsScreen() {
   const handleChangePassword = async () => {
     if (!currentPw || !newPw) return;
     if (newPw.length < 8) {
-      setPwError("New password must be at least 8 characters.");
+      setPwError("New password must be at least 8 characters");
       return;
     }
     setPwBusy(true);
     setPwError(null);
     try {
       await authApi.changePassword(currentPw, newPw);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setChangingPassword(false);
       setCurrentPw("");
       setNewPw("");
+      Alert.alert("Success", "Password updated successfully");
     } catch (e) {
       setPwError(e instanceof Error ? e.message : "Failed to change password");
     } finally {
@@ -119,58 +92,71 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.abyss }}>
-      <View className="px-4 pt-3 pb-3 border-b border-edge">
-        <Text className="font-head font-bold text-[20px] text-bone">Settings</Text>
-      </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Header */}
+        <View className="px-4 pt-4 pb-2">
+          <Text className="font-head font-bold text-[24px] text-bone">Settings</Text>
+          <Text className="font-mono text-[11px] uppercase tracking-widest text-fog mt-0.5">
+            Preferences & access
+          </Text>
+        </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Account */}
         <SectionHeader title="Account" />
         <View className="bg-panel border-t border-b border-edge">
           <SettingRow
-            label="Username"
-            hint={user?.username}
+            label="Captain"
+            hint={user ? `${user.username} · ${user.role}` : "Signed in"}
             right={
-              <View className="bg-emboss border border-edge rounded-md px-2 py-0.5">
-                <Text className="font-mono text-[11px] text-fog">{user?.role}</Text>
-              </View>
+              <TouchableOpacity
+                onPress={handleLogout}
+                className="bg-danger-night border border-brick/40 rounded-input px-3 py-1.5"
+                accessibilityRole="button"
+                accessibilityLabel="Sign out"
+              >
+                <Text className="text-brick font-medium text-[12px]">Sign out</Text>
+              </TouchableOpacity>
             }
           />
-          <TouchableOpacity
-            onPress={() => setChangingPassword(!changingPassword)}
-            className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge"
-            accessibilityRole="button"
-          >
-            <Text className="text-bone text-[14px]">Change password</Text>
-            <View className="flex-row items-center gap-1">
-              <Text className="text-ember text-[13px]">
-                {changingPassword ? "Cancel" : "Change"}
-              </Text>
-              {changingPassword ? (
-                <X size={14} color={colors.ember} />
-              ) : (
-                <ArrowRight size={14} color={colors.ember} />
-              )}
-            </View>
-          </TouchableOpacity>
-
+          <SettingRow
+            label="Change password"
+            hint="Update your master account password"
+            right={
+              <TouchableOpacity
+                onPress={() => setChangingPassword((v) => !v)}
+                className="bg-emboss border border-edge rounded-input px-3 py-1.5"
+                accessibilityRole="button"
+              >
+                <Text className="text-bone font-medium text-[12px]">
+                  {changingPassword ? "Cancel" : "Update"}
+                </Text>
+              </TouchableOpacity>
+            }
+          />
           {changingPassword && (
-            <View className="px-4 py-4 border-b border-edge">
+            <View className="p-4 bg-abyss border-b border-edge">
+              <Text className="text-[11px] font-semibold uppercase tracking-widest text-fog mb-1.5">
+                Current password
+              </Text>
               <TextInput
                 value={currentPw}
                 onChangeText={setCurrentPw}
-                placeholder="Current password"
-                placeholderTextColor={colors.fog}
                 secureTextEntry
-                className="bg-emboss border border-edge rounded-input px-3 py-2.5 text-bone text-[13px] mb-3"
+                placeholder="Current master password"
+                placeholderTextColor={colors.fog}
+                className="bg-panel border border-edge rounded-input px-3 py-2.5 text-bone text-[13px] mb-3"
                 style={{ fontFamily: "Inter_400Regular" }}
               />
+              <Text className="text-[11px] font-semibold uppercase tracking-widest text-fog mb-1.5">
+                New password
+              </Text>
               <TextInput
                 value={newPw}
                 onChangeText={setNewPw}
-                placeholder="New password (min 8 chars)"
-                placeholderTextColor={colors.fog}
                 secureTextEntry
-                className="bg-emboss border border-edge rounded-input px-3 py-2.5 text-bone text-[13px] mb-3"
+                placeholder="At least 8 characters"
+                placeholderTextColor={colors.fog}
+                className="bg-panel border border-edge rounded-input px-3 py-2.5 text-bone text-[13px] mb-3"
                 style={{ fontFamily: "Inter_400Regular" }}
               />
               {pwError && (
@@ -195,89 +181,81 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        <SectionHeader title="Server" />
-        <View className="bg-panel border-t border-b border-edge">
-          <View className="px-4 py-3.5 border-b border-edge">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-bone text-[14px] flex-1 mr-3" numberOfLines={1} ellipsizeMode="middle">
-                {serverUrl || "…"}
-              </Text>
-              <TouchableOpacity onPress={() => setEditingServer((v) => !v)} accessibilityRole="button">
-                <Text className="text-ember text-[13px]">{editingServer ? "Cancel" : "Change"}</Text>
-              </TouchableOpacity>
-            </View>
-            <Text className="text-fog text-[12px] mt-0.5">
-              Backend address. Use the PC&apos;s LAN IP — phone + PC must share Wi-Fi.
-            </Text>
-            {editingServer && (
-              <View className="mt-3">
-                <TextInput
-                  value={serverUrl}
-                  onChangeText={setServerUrl}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                  placeholder="http://192.168.0.111:4000"
-                  placeholderTextColor={colors.fog}
-                  className="bg-emboss border border-edge rounded-input px-3 py-2.5 text-bone text-[13px] mb-3"
-                  style={{ fontFamily: "Inter_400Regular" }}
-                />
-                {serverMsg && (
-                  <Text className="text-fog text-[12px] mb-3">{serverMsg}</Text>
-                )}
-                <TouchableOpacity
-                  onPress={handleSaveServer}
-                  disabled={serverBusy || !serverUrl.trim()}
-                  className="bg-ember rounded-input py-2.5 items-center"
-                  style={{ opacity: serverBusy || !serverUrl.trim() ? 0.55 : 1 }}
-                  accessibilityRole="button"
-                >
-                  {serverBusy ? (
-                    <ActivityIndicator color={colors.abyss} size="small" />
-                  ) : (
-                    <Text className="text-black font-medium text-[13px]">Test & save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-            {!editingServer && serverMsg && (
-              <Text className="text-fog text-[12px] mt-2">{serverMsg}</Text>
-            )}
-          </View>
-        </View>
-
         <SectionHeader title="Security" />
         <View className="bg-panel border-t border-b border-edge">
           <SettingRow
-            label="Biometric lock"
+            label="Biometric unlock"
             hint={
               supported
-                ? "Require fingerprint or face to open the app"
-                : "No biometric hardware enrolled on this device"
+                ? "Require fingerprint or face ID to open"
+                : "Biometrics not available on this device"
             }
             right={
-              supported ? (
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={(v) => void setEnabled(v)}
-                  trackColor={{ false: colors.edge, true: colors.ember }}
-                  thumbColor={colors.bone}
-                  accessibilityLabel="Toggle biometric lock"
-                />
-              ) : undefined
+              <Switch
+                value={biometricEnabled}
+                disabled={!supported}
+                onValueChange={(val) => {
+                  void Haptics.selectionAsync();
+                  setEnabled(val);
+                }}
+                trackColor={{ false: colors.emboss, true: colors.moss }}
+                thumbColor={colors.bone}
+              />
             }
           />
         </View>
 
-        <View className="px-4 mt-6">
+        {/* Monitoring & Audit links */}
+        <SectionHeader title="System & Telemetry" />
+        <View className="bg-panel border-t border-b border-edge">
           <TouchableOpacity
-            onPress={handleLogout}
-            className="border border-brick rounded-input py-3 items-center"
+            onPress={() => router.push("/(app)/monitoring")}
+            className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge"
             accessibilityRole="button"
-            accessibilityLabel="Sign out"
           >
-            <Text className="text-brick font-medium text-[14px]">Sign out</Text>
+            <View>
+              <Text className="text-bone text-[14px]">Prometheus Monitoring</Text>
+              <Text className="text-fog text-[12px] mt-0.5">
+                Host targets, TSDB counters & alertmanager
+              </Text>
+            </View>
+            <ArrowRight size={16} color={colors.fog} />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(app)/notifications")}
+            className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge"
+            accessibilityRole="button"
+          >
+            <View>
+              <Text className="text-bone text-[14px]">Notifications & Alerts</Text>
+              <Text className="text-fog text-[12px] mt-0.5">
+                Recent alert firings and broadcast history
+              </Text>
+            </View>
+            <ArrowRight size={16} color={colors.fog} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(app)/logs")}
+            className="flex-row items-center justify-between px-4 py-3.5"
+            accessibilityRole="button"
+          >
+            <View>
+              <Text className="text-bone text-[14px]">Audit Logs</Text>
+              <Text className="text-fog text-[12px] mt-0.5">
+                Append-only captain actions and deployment history
+              </Text>
+            </View>
+            <ArrowRight size={16} color={colors.fog} />
+          </TouchableOpacity>
+        </View>
+
+        {/* About */}
+        <SectionHeader title="About" />
+        <View className="bg-panel border-t border-b border-edge px-4 py-3.5">
+          <Text className="text-bone text-[13px]">ServerHub Mobile · v2.0</Text>
+          <Text className="text-fog text-[11px] mt-0.5">
+            React Native + Expo SDK 52 · Cyberdeck theme
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

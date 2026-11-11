@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"serverhub/internal/database"
+	"serverhub/internal/serverinfo"
 )
 
 type TelemetryHandler struct {
@@ -108,4 +109,11 @@ func (h *TelemetryHandler) Latest(c *gin.Context) {
 		"diskPct": latest.diskPct, "netRx": latest.rx, "netTx": latest.tx,
 		"rxRate": rxRate, "txRate": txRate, "diskReadRate": rdRate, "diskWriteRate": wrRate,
 	})
+}
+
+// GET /server-hub/api/telemetry/live — instant host reading straight from
+// gopsutil, with no database round trip. The client polls this every few
+// seconds for the live gauges; the 60s sampler above still owns history.
+func (h *TelemetryHandler) Live(c *gin.Context) {
+	c.JSON(http.StatusOK, serverinfo.GetLive())
 }

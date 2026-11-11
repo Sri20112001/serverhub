@@ -37,6 +37,7 @@ type Filesystem struct {
 	Device   string  `json:"device"`
 	Mount    string  `json:"mount"`
 	Fstype   string  `json:"fstype"`
+	Kind     string  `json:"kind"` // nvme | ssd | hdd | "" (unknown)
 	TotalGB  float64 `json:"totalGB"`
 	UsedGB   float64 `json:"usedGB"`
 	FreeGB   float64 `json:"freeGB"`
@@ -44,29 +45,30 @@ type Filesystem struct {
 }
 
 type CPUDetail struct {
-	LogicalCores  int       `json:"logicalCores"`
-	PhysicalCores int       `json:"physicalCores"`
-	Model         string    `json:"model"`
-	Mhz           float64   `json:"mhz"`
-	Load1         float64   `json:"load1"`
-	Load5         float64   `json:"load5"`
-	Load15        float64   `json:"load15"`
-	TimesUserPct  float64   `json:"timesUserPct"`
-	TimesSysPct   float64   `json:"timesSysPct"`
-	TimesIdlePct  float64   `json:"timesIdlePct"`
-	TimesIowaitPct float64  `json:"timesIowaitPct"`
+	LogicalCores   int     `json:"logicalCores"`
+	PhysicalCores  int     `json:"physicalCores"`
+	Model          string  `json:"model"`
+	Mhz            float64 `json:"mhz"`
+	Load1          float64 `json:"load1"`
+	Load5          float64 `json:"load5"`
+	Load15         float64 `json:"load15"`
+	TimesUserPct   float64 `json:"timesUserPct"`
+	TimesSysPct    float64 `json:"timesSysPct"`
+	TimesIdlePct   float64 `json:"timesIdlePct"`
+	TimesIowaitPct float64 `json:"timesIowaitPct"`
 }
 
 type NetIface struct {
-	Name      string  `json:"name"`
-	RxBytes   uint64  `json:"rxBytes"`
-	TxBytes   uint64  `json:"txBytes"`
-	RxErrors  uint64  `json:"rxErrors"`
-	TxErrors  uint64  `json:"txErrors"`
+	Name     string `json:"name"`
+	RxBytes  uint64 `json:"rxBytes"`
+	TxBytes  uint64 `json:"txBytes"`
+	RxErrors uint64 `json:"rxErrors"`
+	TxErrors uint64 `json:"txErrors"`
 }
 
 type DiskIO struct {
 	Device   string  `json:"device"`
+	Kind     string  `json:"kind"` // nvme | ssd | hdd | "" (unknown)
 	ReadMB   float64 `json:"readMB"`
 	WriteMB  float64 `json:"writeMB"`
 	ReadOps  uint64  `json:"readOps"`
@@ -74,40 +76,45 @@ type DiskIO struct {
 }
 
 type HostFacts struct {
-	Hostname string `json:"hostname"`
-	OS       string `json:"os"`
-	Platform string `json:"platform"`
-	Kernel   string `json:"kernel"`
-	Arch     string `json:"arch"`
-	UptimeSec uint64 `json:"uptimeSec"`
-	GoVersion string `json:"goVersion"`
+	Hostname        string `json:"hostname"`
+	OS              string `json:"os"`
+	Platform        string `json:"platform"`
+	PlatformVersion string `json:"platformVersion"`
+	Kernel          string `json:"kernel"`
+	Arch            string `json:"arch"`
+	Virtualization  string `json:"virtualization"`
+	UptimeSec       uint64 `json:"uptimeSec"`
+	GoVersion       string `json:"goVersion"`
 }
 
 type ProcInfo struct {
-	Pid    int32   `json:"pid"`
-	Name   string  `json:"name"`
-	Status string  `json:"status"`
-	MemMB  float64 `json:"memMB"`
-	MemPct float32 `json:"memPct"`
+	Pid        int32   `json:"pid"`
+	PPid       int32   `json:"ppid"`
+	Name       string  `json:"name"`
+	Status     string  `json:"status"`
+	CPUPercent float64 `json:"cpuPercent"`
+	MemMB      float64 `json:"memMB"`
+	MemPct     float32 `json:"memPct"`
+	Username   string  `json:"username"`
 }
 
 type ProcSummary struct {
-	Total    int         `json:"total"`
-	Running  int         `json:"running"`
-	Sleeping int         `json:"sleeping"`
-	Other    int         `json:"other"`
-	Zombie   int         `json:"zombie"`
-	Top      []ProcInfo  `json:"top"`
+	Total    int        `json:"total"`
+	Running  int        `json:"running"`
+	Sleeping int        `json:"sleeping"`
+	Other    int        `json:"other"`
+	Zombie   int        `json:"zombie"`
+	Top      []ProcInfo `json:"top"`
 }
 
 type Detail struct {
-	Host       HostFacts   `json:"host"`
-	CPU        CPUDetail   `json:"cpu"`
-	Memory     MemDetail   `json:"memory"`
+	Host        HostFacts    `json:"host"`
+	CPU         CPUDetail    `json:"cpu"`
+	Memory      MemDetail    `json:"memory"`
 	Filesystems []Filesystem `json:"filesystems"`
-	Network    []NetIface  `json:"network"`
-	DiskIO     []DiskIO    `json:"diskIO"`
-	Processes  ProcSummary `json:"processes"`
+	Network     []NetIface   `json:"network"`
+	DiskIO      []DiskIO     `json:"diskIO"`
+	Processes   ProcSummary  `json:"processes"`
 }
 
 func b2mb(b uint64) float64 { return float64(b) / 1024 / 1024 }
@@ -117,9 +124,15 @@ func GetDetail() Detail {
 	d := Detail{}
 	if h, err := host.Info(); err == nil {
 		d.Host = HostFacts{
-			Hostname: h.Hostname, OS: h.OS, Platform: h.Platform,
-			Kernel: h.KernelVersion, Arch: runtime.GOARCH,
-			UptimeSec: h.Uptime, GoVersion: runtime.Version(),
+			Hostname:        h.Hostname,
+			OS:              h.OS,
+			Platform:        h.Platform,
+			PlatformVersion: h.PlatformVersion,
+			Kernel:          h.KernelVersion,
+			Arch:            runtime.GOARCH,
+			Virtualization:  h.VirtualizationSystem,
+			UptimeSec:       h.Uptime,
+			GoVersion:       runtime.Version(),
 		}
 	}
 	if n, err := cpu.Counts(true); err == nil {
@@ -147,12 +160,16 @@ func GetDetail() Detail {
 	}
 	if m, err := mem.VirtualMemory(); err == nil {
 		d.Memory = MemDetail{
-			TotalMB: b2mb(m.Total), UsedMB: b2mb(m.Used),
-			AvailableMB: b2mb(m.Available), FreeMB: b2mb(m.Free),
-			CachedMB: b2mb(m.Cached), BuffersMB: b2mb(m.Buffers),
-			UsedPct: m.UsedPercent,
-			SwapTotalMB: b2mb(m.SwapTotal), SwapUsedMB: b2mb(m.SwapTotal-m.SwapFree),
-			SwapFreeMB: b2mb(m.SwapFree),
+			TotalMB:     b2mb(m.Total),
+			UsedMB:      b2mb(m.Used),
+			AvailableMB: b2mb(m.Available),
+			FreeMB:      b2mb(m.Free),
+			CachedMB:    b2mb(m.Cached),
+			BuffersMB:   b2mb(m.Buffers),
+			UsedPct:     m.UsedPercent,
+			SwapTotalMB: b2mb(m.SwapTotal),
+			SwapUsedMB:  b2mb(m.SwapTotal - m.SwapFree),
+			SwapFreeMB:  b2mb(m.SwapFree),
 		}
 		if m.SwapTotal > 0 {
 			d.Memory.SwapPct = 100 * float64(m.SwapTotal-m.SwapFree) / float64(m.SwapTotal)
@@ -190,8 +207,13 @@ func filesystems() []Filesystem {
 			continue
 		}
 		out = append(out, Filesystem{
-			Device: p.Device, Mount: p.Mountpoint, Fstype: p.Fstype,
-			TotalGB: b2gb(u.Total), UsedGB: b2gb(u.Used), FreeGB: b2gb(u.Free),
+			Device:  p.Device,
+			Mount:   p.Mountpoint,
+			Fstype:  p.Fstype,
+			Kind:    driveKind(p.Device),
+			TotalGB: b2gb(u.Total),
+			UsedGB:  b2gb(u.Used),
+			FreeGB:  b2gb(u.Free),
 			UsedPct: u.UsedPercent,
 		})
 	}
@@ -210,8 +232,11 @@ func interfaces() []NetIface {
 			continue
 		}
 		out = append(out, NetIface{
-			Name: c.Name, RxBytes: c.BytesRecv, TxBytes: c.BytesSent,
-			RxErrors: c.Errin, TxErrors: c.Errout,
+			Name:     c.Name,
+			RxBytes:  c.BytesRecv,
+			TxBytes:  c.BytesSent,
+			RxErrors: c.Errin,
+			TxErrors: c.Errout,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
@@ -229,8 +254,12 @@ func diskIO() []DiskIO {
 			continue
 		}
 		out = append(out, DiskIO{
-			Device: name, ReadMB: b2mb(c.ReadBytes), WriteMB: b2mb(c.WriteBytes),
-			ReadOps: c.ReadCount, WriteOps: c.WriteCount,
+			Device:   name,
+			Kind:     driveKind(name),
+			ReadMB:   b2mb(c.ReadBytes),
+			WriteMB:  b2mb(c.WriteBytes),
+			ReadOps:  c.ReadCount,
+			WriteOps: c.WriteCount,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -307,11 +336,24 @@ func processes() ProcSummary {
 		if pct, err := p.MemoryPercent(); err == nil {
 			memPct = pct
 		}
-		all = append(all, ProcInfo{Pid: pid, Name: name, Status: label, MemMB: memMB, MemPct: memPct})
+		cpuPct, _ := p.CPUPercent()
+		username, _ := p.Username()
+		ppid, _ := p.Ppid()
+
+		all = append(all, ProcInfo{
+			Pid:        pid,
+			PPid:       ppid,
+			Name:       name,
+			Status:     label,
+			CPUPercent: cpuPct,
+			MemMB:      memMB,
+			MemPct:     memPct,
+			Username:   username,
+		})
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].MemMB > all[j].MemMB })
-	if len(all) > 8 {
-		all = all[:8]
+	if len(all) > 60 {
+		all = all[:60]
 	}
 	sum.Top = all
 	return sum

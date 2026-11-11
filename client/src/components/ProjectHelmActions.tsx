@@ -1,4 +1,4 @@
-import { Pencil, Play, Power, RotateCcw, Terminal, Trash2 } from "lucide-react";
+import { FolderTree, Pencil, Play, Power, RotateCcw, Terminal, Trash2 } from "lucide-react";
 // DEPLOY: Rocket icon only used by the paused "Ship it" action.
 // import { Rocket } from "lucide-react";
 import { Kicker } from "./ui/Kicker";
@@ -39,6 +39,9 @@ export function ProjectHelmActions({
         </button>
         <button className="inline-flex items-center gap-2 rounded-input text-[13px] font-medium px-4 py-2 cursor-pointer border border-transparent whitespace-nowrap transition-colors duration-150 disabled:opacity-55 disabled:cursor-not-allowed bg-white dark:bg-panel border-line dark:border-edge text-ink dark:text-bone hover:bg-paper dark:hover:bg-emboss px-3 py-1.5 text-xs" disabled={d.busy || d.services.filter((s) => s.containerName).length === 0} onClick={() => d.setShowTerminal(true)} title="Open an interactive shell in a station container">
           <Terminal size={13} /> Terminal
+        </button>
+        <button className="inline-flex items-center gap-2 rounded-input text-[13px] font-medium px-4 py-2 cursor-pointer border border-transparent whitespace-nowrap transition-colors duration-150 disabled:opacity-55 disabled:cursor-not-allowed bg-white dark:bg-panel border-line dark:border-edge text-ink dark:text-bone hover:bg-paper dark:hover:bg-emboss px-3 py-1.5 text-xs" disabled={d.busy || d.services.filter((s) => s.containerName).length === 0} onClick={() => d.setShowFiles(true)} title="Browse container filesystem and view/download files">
+          <FolderTree size={13} /> Files
         </button>
         <button
           className="inline-flex items-center gap-2 rounded-input text-[13px] font-medium px-4 py-2 cursor-pointer border border-transparent whitespace-nowrap transition-colors duration-150 disabled:opacity-55 disabled:cursor-not-allowed bg-white dark:bg-panel border-line dark:border-edge text-ink dark:text-bone hover:bg-paper dark:hover:bg-emboss px-3 py-1.5 text-xs ml-auto"

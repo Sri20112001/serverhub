@@ -66,11 +66,16 @@ export function fmtBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// Rounded network speed formatter: clean rounded integers for KB/s and MB/s
 export function fmtRate(kbs: number): string {
-  if (!kbs || kbs < 0) return "0 B/s";
+  if (!kbs || kbs <= 0) return "0 B/s";
   if (kbs < 1) return `${Math.round(kbs * 1024)} B/s`;
-  if (kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
-  return `${(kbs / 1024).toFixed(2)} MB/s`;
+  if (kbs < 1000) return `${Math.round(kbs)} KB/s`;
+  const mbs = kbs / 1024;
+  if (mbs < 100) return `${(Math.round(mbs * 10) / 10).toFixed(1)} MB/s`;
+  if (mbs < 1000) return `${Math.round(mbs)} MB/s`;
+  const gbs = mbs / 1024;
+  return `${(Math.round(gbs * 10) / 10).toFixed(1)} GB/s`;
 }
 
 export function fmtGBFromMB(mb: number): string {

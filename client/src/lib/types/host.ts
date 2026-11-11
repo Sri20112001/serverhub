@@ -16,6 +16,8 @@ export interface Filesystem {
   device: string;
   mount: string;
   fstype: string;
+  // nvme | ssd | hdd, empty when the host cannot report it
+  kind?: string;
   totalGB: number;
   usedGB: number;
   freeGB: number;
@@ -46,6 +48,8 @@ export interface NetIface {
 
 export interface DiskIO {
   device: string;
+  // nvme | ssd | hdd, empty when the host cannot report it
+  kind?: string;
   readMB: number;
   writeMB: number;
   readOps: number;
@@ -54,10 +58,23 @@ export interface DiskIO {
 
 export interface ProcInfo {
   pid: number;
+  ppid?: number;
   name: string;
   status: string;
+  cpuPercent?: number;
   memMB: number;
   memPct: number;
+  username?: string;
+}
+
+export interface DetailedProcess extends ProcInfo {
+  ppid?: number;
+  cmdline?: string;
+  exe?: string;
+  cwd?: string;
+  createTime?: number;
+  numThreads?: number;
+  isProtected?: boolean;
 }
 
 export interface ServerDetail {
@@ -65,8 +82,10 @@ export interface ServerDetail {
     hostname: string;
     os: string;
     platform: string;
+    platformVersion?: string;
     kernel: string;
     arch: string;
+    virtualization?: string;
     uptimeSec: number;
     goVersion: string;
   };
@@ -120,4 +139,21 @@ export interface ContainerStat {
   blockReadMB: number;
   blockWriteMB: number;
   pids: number;
+}
+
+// Instant host reading from /telemetry/live. Network and disk fields are
+// cumulative counters; the client derives rates from consecutive polls.
+export interface LiveReading {
+  ts: number;
+  cpuPercent: number;
+  memUsedMB: number;
+  memTotalMB: number;
+  memPercent: number;
+  diskUsedGB: number;
+  diskTotalGB: number;
+  diskPercent: number;
+  netRxBytes: number;
+  netTxBytes: number;
+  diskReadBytes: number;
+  diskWriteBytes: number;
 }

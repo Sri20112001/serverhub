@@ -24,7 +24,18 @@ export function useSettings(setOnline: (v: boolean) => void) {
   const { user } = useAuth();
   const pushToast = useUi((s) => s.pushToast);
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get("tab") as SettingsTab;
+      if (t && ["profile", "notifications", "system", "users", "danger"].includes(t)) {
+        return t;
+      }
+    } catch {
+      /* fallback */
+    }
+    return "profile";
+  });
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<AlertPrefs>(loadAlertPrefs);
