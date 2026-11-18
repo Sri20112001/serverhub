@@ -1,22 +1,9 @@
 import axios from "axios";
 import { storage } from "../utils/storage";
 
-function resolveDefaultApiBase(): string {
-  if (typeof window !== "undefined" && window.location?.hostname) {
-    const host = window.location.hostname;
-    if (host) {
-      return `http://${host}:4000`;
-    }
-  }
-  const envUrl = (process.env.EXPO_PUBLIC_API_URL as string | undefined)?.trim();
-  return envUrl && envUrl.length > 0 ? envUrl : "http://192.168.0.111:4000";
-}
-
-// Production API Base URL configured via environment file (.env).
-// When previewing on web browser, dynamically routes to the current hostname port 4000.
-export const DEFAULT_API_BASE = resolveDefaultApiBase();
-
-export const API_BASE = DEFAULT_API_BASE;
+// Hardcoded production base API URL using HTTP (no dynamic switching).
+export const API_BASE = "http://imagesoft.in:4000";
+export const DEFAULT_API_BASE = API_BASE;
 
 export const TOKEN_KEY = "serverhub_token";
 export const REFRESH_KEY = "serverhub_refresh_token";

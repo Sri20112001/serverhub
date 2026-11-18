@@ -8,7 +8,7 @@ export function normalizeUrl(url: string): string {
   return url.trim().replace(/\/+$/, "");
 }
 
-/** Production API base URL baked via EXPO_PUBLIC_API_URL (see mobile/.env). */
+/** Production API base URL (hardcoded HTTP endpoint). */
 export function defaultBaseUrl(): string {
   return normalizeUrl(DEFAULT_API_BASE);
 }
