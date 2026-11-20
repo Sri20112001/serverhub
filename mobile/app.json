@@ -24,6 +24,7 @@
         "backgroundColor": "#121316"
       },
       "package": "com.serverhub.mobile",
+      "versionCode": 2,
       "targetSdkVersion": 34,
       "usesCleartextTraffic": true,
       "permissions": [
