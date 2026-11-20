@@ -10,11 +10,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowRight } from "lucide-react-native";
+import { ArrowRight, Gauge } from "lucide-react-native";
 import { useAuthStore } from "../../../src/stores/authStore";
 import { useBiometricStore } from "../../../src/stores/biometricStore";
+import { useTelemetryPrefsStore } from "../../../src/stores/telemetryPrefsStore";
 import { authApi } from "../../../src/api/auth";
 import { colors } from "../../../src/theme/colors";
 
@@ -49,6 +50,7 @@ function SettingRow({
 export default function SettingsScreen() {
   const { user, logout } = useAuthStore();
   const { enabled: biometricEnabled, supported, setEnabled } = useBiometricStore();
+  const { pollingIntervalMs, setPollingIntervalMs } = useTelemetryPrefsStore();
   const [changingPassword, setChangingPassword] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -208,6 +210,56 @@ export default function SettingsScreen() {
         {/* Monitoring & Audit links */}
         <SectionHeader title="System & Telemetry" />
         <View className="bg-panel border-t border-b border-edge">
+          <TouchableOpacity
+            onPress={() => router.push("/(app)/(tabs)/telemetry" as unknown as Href)}
+            className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge"
+            accessibilityRole="button"
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="w-8 h-8 rounded-lg bg-ember/15 items-center justify-center border border-ember/30">
+                <Gauge size={16} color={colors.ember} />
+              </View>
+              <View>
+                <Text className="text-bone text-[14px]">Live Host Telemetry</Text>
+                <Text className="text-fog text-[12px] mt-0.5">
+                  Real-time CPU, RAM, Disk, Sparklines & Process Tree
+                </Text>
+              </View>
+            </View>
+            <ArrowRight size={16} color={colors.fog} />
+          </TouchableOpacity>
+
+          <View className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge">
+            <View>
+              <Text className="text-bone text-[14px]">Telemetry Polling Rate</Text>
+              <Text className="text-fog text-[12px] mt-0.5">
+                Frequency for real-time dashboard updates
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-1 bg-abyss border border-edge rounded-lg p-0.5">
+              {[1000, 2000, 5000].map((ms) => (
+                <TouchableOpacity
+                  key={ms}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    void setPollingIntervalMs(ms);
+                  }}
+                  className={`px-2 py-1 rounded ${
+                    pollingIntervalMs === ms ? "bg-ember" : "bg-transparent"
+                  }`}
+                >
+                  <Text
+                    className={`text-[11px] font-mono font-bold ${
+                      pollingIntervalMs === ms ? "text-abyss" : "text-fog"
+                    }`}
+                  >
+                    {ms / 1000}s
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <TouchableOpacity
             onPress={() => router.push("/(app)/monitoring")}
             className="flex-row items-center justify-between px-4 py-3.5 border-b border-edge"

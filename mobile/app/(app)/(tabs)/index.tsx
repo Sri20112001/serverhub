@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, ArrowRight, ChevronRight, Check, X } from "lucide-react-native";
+import { RefreshCw, ArrowRight, ChevronRight, Check, X, Gauge } from "lucide-react-native";
 import { dashboardApi } from "../../../src/api/dashboard";
 import { useAuthStore } from "../../../src/stores/authStore";
 import { Meter } from "../../../src/components/Meter";
@@ -133,18 +133,32 @@ export default function DashboardScreen() {
                 <Text className="text-[10px] font-semibold uppercase tracking-widest text-fog">
                   Server load
                 </Text>
-                <TouchableOpacity
-                  onPress={() => router.push("/(app)/logs")}
-                  accessibilityRole="button"
-                  accessibilityLabel="View logs"
-                >
-                  <View className="flex-row items-center gap-1">
-                    <Text className="text-ember text-[11px] font-mono">
-                      Logs
-                    </Text>
-                    <ArrowRight size={12} color={colors.ember} />
-                  </View>
-                </TouchableOpacity>
+                <View className="flex-row items-center gap-2">
+                  <TouchableOpacity
+                    onPress={() => router.push("/(app)/(tabs)/telemetry" as unknown as Href)}
+                    accessibilityRole="button"
+                    accessibilityLabel="View telemetry"
+                  >
+                    <View className="flex-row items-center gap-1 bg-ember/15 border border-ember/30 px-2 py-0.5 rounded">
+                      <Gauge size={11} color={colors.ember} />
+                      <Text className="text-ember text-[11px] font-mono font-bold">
+                        Telemetry
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push("/(app)/logs")}
+                    accessibilityRole="button"
+                    accessibilityLabel="View logs"
+                  >
+                    <View className="flex-row items-center gap-1">
+                      <Text className="text-fog text-[11px] font-mono">
+                        Logs
+                      </Text>
+                      <ArrowRight size={12} color={colors.fog} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
               <Meter
                 label="CPU"

@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Bell,
   Activity,
+  Gauge,
   Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react-native";
@@ -161,6 +162,15 @@ export default function TabsLayout() {
             <TabIcon icon={Bell} label="Notifs" focused={focused} />
           ),
           tabBarAccessibilityLabel: "Notifications",
+        }}
+      />
+      <Tabs.Screen
+        name="telemetry"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={Gauge} label="Telemetry" focused={focused} />
+          ),
+          tabBarAccessibilityLabel: "Telemetry",
         }}
       />
       <Tabs.Screen
