@@ -24,9 +24,7 @@
         "backgroundColor": "#121316"
       },
       "package": "com.serverhub.mobile",
-      "versionCode": 2,
-      "targetSdkVersion": 34,
-      "usesCleartextTraffic": true,
+      "versionCode": 3,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
@@ -61,6 +59,14 @@
           "dark": {
             "image": "./assets/splash.png",
             "backgroundColor": "#121316"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
           }
         }
       ]
