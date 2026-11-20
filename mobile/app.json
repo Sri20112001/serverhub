@@ -24,10 +24,9 @@
         "backgroundColor": "#121316"
       },
       "package": "com.serverhub.mobile",
+      "targetSdkVersion": 34,
       "usesCleartextTraffic": true,
       "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ]
