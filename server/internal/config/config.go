@@ -117,7 +117,7 @@ func Load() *Config {
 		AdminUser:       getenv("ADMIN_USERNAME", "admin"),
 		AdminPass:       adminPass,
 		WebhookSecret:   os.Getenv("GITHUB_WEBHOOK_SECRET"),
-		ScanRoots:       splitRoots(getenv("SCAN_ROOTS", "/srv/apps")),
+		ScanRoots:       splitRoots(getenv("SCAN_ROOTS", "/srv/apps,/var/www")),
 		AlertCPU:        getenvFloat("ALERT_CPU_PCT", 85),
 		AlertRAM:        getenvFloat("ALERT_RAM_PCT", 90),
 		AlertDisk:       getenvFloat("ALERT_DISK_PCT", 80),

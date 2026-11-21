@@ -130,7 +130,7 @@ services:
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
       HEALTH_CHECK_INTERVAL_SEC: "60"
       COOKIE_SECURE: "${COOKIE_SECURE:-false}"
-      SCAN_ROOTS: ${SCAN_ROOTS:-/srv/apps}
+      SCAN_ROOTS: ${SCAN_ROOTS:-/srv/apps,/var/www}
       BACKUP_DIR: /app/data/backups
       # Prebuilt agent binaries baked into the image by server/Dockerfile.
       AGENT_BIN_DIR: /app/agents

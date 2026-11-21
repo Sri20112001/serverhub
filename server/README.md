@@ -62,7 +62,7 @@ POST /server-hub/api/projects/:id/start
 POST /server-hub/api/projects/:id/stop?confirm=true       (high-risk, docker compose stop)
 POST /server-hub/api/projects/:id/restart?confirm=true    (high-risk, docker compose restart)
 GET /server-hub/api/images  GET /server-hub/api/volumes
-GET /server-hub/api/discovery (Docker labels + directory signatures under SCAN_ROOTS, default /srv/apps)
+GET /server-hub/api/discovery (Docker labels + directory signatures under SCAN_ROOTS, default /srv/apps,/var/www)
 POST /server-hub/api/discovery/import  {name} (register ship + stations; compose services parsed on import)
 GET /server-hub/api/health  GET /server-hub/api/projects/:id/health
 GET /server-hub/api/deployments  GET/POST /server-hub/api/projects/:id/deployments  POST /server-hub/api/projects/:id/deploy

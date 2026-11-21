@@ -88,3 +88,74 @@ networks:
 		}
 	}
 }
+
+func TestScanVarWwwStaticAndPHP(t *testing.T) {
+	root := t.TempDir()
+	staticSite := filepath.Join(root, "my-landing")
+	phpSite := filepath.Join(root, "wordpress")
+	laravelSite := filepath.Join(root, "laravel-app")
+	laravelPublic := filepath.Join(laravelSite, "public")
+
+	for _, d := range []string{staticSite, phpSite, laravelPublic} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write(t, staticSite, "index.html", "<!doctype html><html><body><h1>Hello</h1></body></html>")
+	write(t, staticSite, ".htaccess", "RewriteEngine On")
+
+	write(t, phpSite, "index.php", "<?php phpinfo(); ?>")
+	write(t, phpSite, "wp-config.php", "<?php define('DB_NAME', 'wp'); ?>")
+
+	write(t, laravelSite, "artisan", "#!/usr/bin/env php\n")
+	write(t, laravelPublic, "index.php", "<?php // laravel entry")
+
+	found := Scan([]string{root})
+	if len(found) != 3 {
+		t.Fatalf("expected 3 projects, got %d: %v", len(found), found)
+	}
+
+	byName := map[string]FoundProject{}
+	for _, f := range found {
+		byName[f.Name] = f
+	}
+
+	// 1. Verify static site
+	landing, ok := byName["my-landing"]
+	if !ok {
+		t.Fatalf("missing my-landing")
+	}
+	hasStack := func(fp FoundProject, target string) bool {
+		for _, s := range fp.Stack {
+			if s == target {
+				return true
+			}
+		}
+		return false
+	}
+	if !hasStack(landing, "Static Web") {
+		t.Errorf("expected Static Web in landing stack: %v", landing.Stack)
+	}
+	if !hasStack(landing, "Apache") {
+		t.Errorf("expected Apache in landing stack: %v", landing.Stack)
+	}
+
+	// 2. Verify PHP/WordPress
+	wp, ok := byName["wordpress"]
+	if !ok {
+		t.Fatalf("missing wordpress")
+	}
+	if !hasStack(wp, "PHP") || !hasStack(wp, "WordPress") {
+		t.Errorf("expected PHP and WordPress in wp stack: %v", wp.Stack)
+	}
+
+	// 3. Verify Laravel
+	laravel, ok := byName["laravel-app"]
+	if !ok {
+		t.Fatalf("missing laravel-app")
+	}
+	if !hasStack(laravel, "PHP") || !hasStack(laravel, "Laravel") {
+		t.Errorf("expected PHP and Laravel in laravel stack: %v", laravel.Stack)
+	}
+}

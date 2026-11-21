@@ -63,7 +63,10 @@ func guessType(name, image string) string {
 		return "backend"
 	case strings.Contains(hay, "front"), strings.Contains(hay, "web"),
 		strings.Contains(hay, "ui"), strings.Contains(hay, "client"),
-		strings.Contains(hay, "nginx"), strings.Contains(hay, "caddy"):
+		strings.Contains(hay, "nginx"), strings.Contains(hay, "caddy"),
+		strings.Contains(hay, "apache"), strings.Contains(hay, "httpd"),
+		strings.Contains(hay, "html"), strings.Contains(hay, "php"),
+		strings.Contains(hay, "site"), strings.Contains(hay, "static"):
 		return "frontend"
 	default:
 		return "other"
@@ -264,7 +267,19 @@ func (h *DiscoveryHandler) importProject(actor, name string, publish bool) (gin.
 			}
 		}
 		if len(services) == 0 {
-			services = append(services, discoveredService{Name: name, Type: "other"})
+			svcType := "other"
+			for _, st := range fp.Stack {
+				stLow := strings.ToLower(st)
+				if strings.Contains(stLow, "web") || strings.Contains(stLow, "html") ||
+					strings.Contains(stLow, "react") || strings.Contains(stLow, "vue") ||
+					strings.Contains(stLow, "php") || strings.Contains(stLow, "vite") ||
+					strings.Contains(stLow, "next") || strings.Contains(stLow, "wordpress") ||
+					strings.Contains(stLow, "laravel") {
+					svcType = "frontend"
+					break
+				}
+			}
+			services = append(services, discoveredService{Name: name, Type: svcType})
 		}
 	} else {
 		detected, err := h.detect(name)

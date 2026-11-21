@@ -50,6 +50,14 @@ func Scan(roots []string) []FoundProject {
 			continue
 		}
 		scannedRoots++
+		// If root itself is a project (e.g. has index.html, package.json, go.mod, etc.)
+		if fp, ok := inspect(root); ok && !seen[root] {
+			seen[root] = true
+			out = append(out, fp)
+			if len(out) >= maxDirs {
+				return out
+			}
+		}
 		entries, err := os.ReadDir(root)
 		if err != nil {
 			continue
@@ -94,6 +102,17 @@ func inspect(dir string) (FoundProject, bool) {
 		}
 		if !f.IsDir() {
 			has[f.Name()] = true
+		} else {
+			name := f.Name()
+			if name == "public" || name == "dist" || name == "build" || name == "web" || name == "html" {
+				if sub, err := os.ReadDir(filepath.Join(dir, name)); err == nil {
+					for _, sf := range sub {
+						if !sf.IsDir() {
+							has[name+"/"+sf.Name()] = true
+						}
+					}
+				}
+			}
 		}
 	}
 	add := func(s string) {
@@ -142,6 +161,27 @@ func inspect(dir string) (FoundProject, bool) {
 	}
 	if has["pom.xml"] || has["build.gradle"] || has["build.gradle.kts"] {
 		add("Java")
+	}
+	if has["index.html"] || has["index.htm"] || has["public/index.html"] || has["dist/index.html"] || has["build/index.html"] {
+		add("Static Web")
+	}
+	if has["index.php"] || has["public/index.php"] || has["web/index.php"] || has["composer.json"] || has["artisan"] {
+		add("PHP")
+		if has["artisan"] {
+			add("Laravel")
+		}
+		if has["wp-config.php"] || has["wp-load.php"] {
+			add("WordPress")
+		}
+	}
+	if has["nginx.conf"] || has["default.conf"] {
+		add("Nginx")
+	}
+	if has["Caddyfile"] {
+		add("Caddy")
+	}
+	if has[".htaccess"] {
+		add("Apache")
 	}
 	if len(fp.Stack) == 0 {
 		return fp, false
